@@ -1,0 +1,194 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Client {
+  id            String   @id @default(cuid())
+  name          String
+  abn           String?
+  billingEmail  String?
+  billingAddress String?
+  phone         String?
+  notes         String?
+  sites         Site[]
+  contacts      Contact[]
+  assets        Asset[]
+  quotes        Quote[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Site {
+  id        String  @id @default(cuid())
+  name      String
+  address   String?
+  region    String?
+  clientId  String
+  client    Client  @relation(fields: [clientId], references: [id])
+  assets    Asset[]
+  quotes    Quote[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Contact {
+  id        String @id @default(cuid())
+  name      String
+  email     String?
+  phone     String?
+  role      String?
+  clientId  String
+  client    Client @relation(fields: [clientId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Supplier {
+  id          String @id @default(cuid())
+  name        String
+  abn         String?
+  email       String?
+  phone       String?
+  address     String?
+  preferred   Boolean  @default(false)
+  vendorScore Int      @default(75)
+  notes       String?
+  prices      PartSupplierPrice[]
+  quoteItems  QuoteItem[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Part {
+  id          String @id @default(cuid())
+  partNo      String @unique
+  description String
+  uom         String
+  category    String?
+  // SQLite in Prisma does not support Json type -> store as TEXT (stringified JSON if needed)
+  specs       String?
+  hazards     String?
+  msdsUrl     String?
+  prices      PartSupplierPrice[]
+  quoteItems  QuoteItem[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model PartSupplierPrice {
+  id           String  @id @default(cuid())
+  partId       String
+  supplierId   String
+  priceEx      Decimal
+  currency     String   @default("AUD")
+  leadDays     Int?
+  minOrderQty  Float?
+  breakQty     Float?
+  breakPriceEx Decimal?
+  validFrom    DateTime?
+  validTo      DateTime?
+  part         Part     @relation(fields: [partId], references: [id])
+  supplier     Supplier @relation(fields: [supplierId], references: [id])
+}
+
+model Asset {
+  id               String  @id @default(cuid())
+  clientId         String
+  siteId           String
+  assetTag         String
+  name             String
+  assetType        String?
+  oem              String?
+  model            String?
+  serial           String?
+  criticality      Int?
+  duty             String?
+  location         String?
+  commissioningDate DateTime?
+  pmIntervalDays   Int?
+  lastServiceDate  DateTime?
+  nextDueDate      DateTime?
+  hazardNotes      String?
+  client           Client @relation(fields: [clientId], references: [id])
+  site             Site   @relation(fields: [siteId], references: [id])
+  serviceReports   ServiceReport[]
+  quoteItems       QuoteItem[]
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model Quote {
+  id         String   @id @default(cuid())
+  number     String   @unique
+  clientId   String
+  siteId     String?
+  status     String   @default("Draft") // Draft, Issued, Accepted, Rejected, Expired
+  subtotalEx Decimal  @default(0)
+  gst        Decimal  @default(0)
+  totalInc   Decimal  @default(0)
+  validityDays Int    @default(30)
+  version    Int      @default(1)
+  items      QuoteItem[]
+  client     Client   @relation(fields: [clientId], references: [id])
+  site       Site?    @relation(fields: [siteId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model QuoteItem {
+  id         String   @id @default(cuid())
+  quoteId    String
+  lineNo     Int
+  itemType   String // Labour, Part, Task
+  description String
+  qty        Float
+  unitRateEx Decimal
+  partId     String?
+  supplierId String?
+  assetId    String?
+  isOptional Boolean  @default(false)
+  quote      Quote    @relation(fields: [quoteId], references: [id])
+  part       Part?    @relation(fields: [partId], references: [id])
+  supplier   Supplier? @relation(fields: [supplierId], references: [id])
+  asset      Asset?   @relation(fields: [assetId], references: [id])
+}
+
+model ServiceReport {
+  id           String  @id @default(cuid())
+  assetId      String
+  summary      String
+  faultCode    String?
+  diagnosis    String?
+  rectification String?
+  // SQLite: store JSON as TEXT strings
+  measurements String?
+  partsUsed    String?
+  nextActions  String?
+  signedPdfUrl String?
+  signatures   Signature[]
+  asset        Asset   @relation(fields: [assetId], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Signature {
+  id              String   @id @default(cuid())
+  // For generality you can keep these, but we'll also link to ServiceReport explicitly
+  entityType      String?
+  entityId        String?
+  serviceReportId String?
+  serviceReport   ServiceReport? @relation(fields: [serviceReportId], references: [id])
+  signedByName    String
+  role            String?
+  method          String? // touch, typed
+  lat             Float?
+  lon             Float?
+  imageData       String?
+  signedAt        DateTime @default(now())
+}
