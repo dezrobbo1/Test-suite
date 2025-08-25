@@ -1,0 +1,62 @@
+
+openapi: 3.0.3
+info:
+  title: Mechanical Services Suite API
+  version: 0.1.0
+servers:
+  - url: http://localhost:4000
+paths:
+  /api/clients:
+    get:
+      summary: List clients
+      responses: { '200': { description: OK } }
+    post:
+      summary: Create client
+      responses: { '200': { description: OK } }
+  /api/sites:
+    get:
+      summary: List sites
+      responses: { '200': { description: OK } }
+    post:
+      summary: Create site
+      responses: { '200': { description: OK } }
+  /api/parts:
+    get:
+      summary: List parts
+      responses: { '200': { description: OK } }
+    post:
+      summary: Create part
+      responses: { '200': { description: OK } }
+  /api/assets:
+    get:
+      summary: List assets
+      responses: { '200': { description: OK } }
+    post:
+      summary: Create asset
+      responses: { '200': { description: OK } }
+  /api/quotes:
+    get:
+      summary: List quotes
+      responses: { '200': { description: OK } }
+    post:
+      summary: Create quote with line items
+      responses: { '200': { description: OK } }
+  /api/quotes/{id}:
+    get:
+      summary: Get a quote by ID
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+  /api/quotes/{id}/pdf:
+    post:
+      summary: Generate Quote PDF
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: Sends PDF } }
+  /api/service-reports:
+    post:
+      summary: Create service report
+      responses: { '200': { description: OK } }
+  /api/service-reports/{id}/signature:
+    post:
+      summary: Add a signature to a service report
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
